@@ -156,6 +156,7 @@ def Dataset(data_type,
     assert data_type in ['shard', 'raw', 'feat']
     lists = read_lists(data_list_file)
     shuffle = configs.get('shuffle', False)
+    raw_wav = configs.get('raw_wav', False)
     # Global shuffle
     dataset = DataList(lists, shuffle=shuffle, repeat_dataset=repeat_dataset)
     if data_type == 'shard':
@@ -188,6 +189,10 @@ def Dataset(data_type,
             # random chunk
             chunk_len = num_frms = configs.get('num_frms', 200)
             dataset = Processor(dataset, processor.random_chunk, chunk_len, 'feat')
+
+        # Even for evalutation we have two types of data
+        # short one and whole utterance     
+
     else:
         # resample
         resample_rate = configs.get('resample_rate', 16000)
@@ -211,9 +216,13 @@ def Dataset(data_type,
             noise_data = LmdbData(noise_lmdb_file)
             dataset = Processor(dataset, processor.add_reverb_noise, reverb_data,
                                 noise_data, resample_rate, aug_prob)
+        if not raw_wav:
         # compute fbank
-        dataset = Processor(dataset, processor.compute_fbank, **configs['fbank_args'])
+            dataset = Processor(dataset, processor.compute_fbank, **configs['fbank_args'])
 
+    if raw_wav:
+        dataset = Processor(dataset, processor.compute_raw)
+        return dataset
     # apply cmvn
     dataset = Processor(dataset, processor.apply_cmvn)
 

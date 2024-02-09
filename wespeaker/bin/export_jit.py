@@ -49,9 +49,9 @@ def main():
     load_checkpoint(model, args.checkpoint)
     # Export jit torch script model
 
-    script_model = torch.jit.script(model)
-    script_model.save(args.output_file)
-    print('Export model successfully, see {}'.format(args.output_file))
+    # script_model = torch.jit.script(model)
+    # script_model.save(args.output_file)
+    # print('Export model successfully, see {}'.format(args.output_file))
 
     # Export quantized jit torch script model
     if args.output_quant_file:

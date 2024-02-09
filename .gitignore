@@ -1,42 +1,10 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info
-
-# Visual Studio Code files
-.vscode
-.vs
-
-# PyCharm files
-.idea
-venv
-
-# Eclipse Project settings
-*.*project
-.settings
-
-# Sublime Text settings
-*.sublime-workspace
-*.sublime-project
-
-# Editor temporaries
-*.swn
-*.swo
-*.swp
-*.swm
-*~
-
-# IPython notebook checkpoints
-.ipynb_checkpoints
-
-# macOS dir files
-.DS_Store
-
-exp
-data
-raw_wav
-tensorboard
-**/*build*
-
-*.onnx
+# .gitignore
+examples/voxceleb/v2/data/
+examples/voxceleb/v2/exp/
+examples/voxceleb/v2/*.out
+examples/voxceleb/v2/*.sh
+examples/voxceleb/v2/conf/wavlm_*
+*.pyc
+!examples/voxceleb/v2/conf/wavlm_base_MHFA_LR.yaml
+!examples/voxceleb/v2/conf/wavlm_base_MHFA_LR_lm.yaml
+!examples/voxceleb/v2/run_HUBERT2.sh

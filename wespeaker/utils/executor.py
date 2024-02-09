@@ -67,6 +67,7 @@ def run_epoch(dataloader,
         optimizer.zero_grad()
         # scaler does nothing here if enable_amp=False
         scaler.scale(loss).backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
         scaler.step(optimizer)
         scaler.update()
 

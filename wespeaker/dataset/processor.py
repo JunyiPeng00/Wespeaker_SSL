@@ -562,3 +562,48 @@ def spec_aug(data, num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
                 y[:, start:end] = 0
             sample['feat'] = y
         yield sample
+
+def compute_raw(data):
+    for sample in data:
+        assert 'sample_rate' in sample
+        assert 'wav' in sample
+        assert 'key' in sample
+        assert 'label' in sample
+        sample_rate = sample['sample_rate']
+        waveform = sample['wav'].squeeze(0)
+        waveform = waveform * (1 << 15)
+        yield dict(key=sample['key'], label=sample['label'], feat=waveform)
+
+
+def get_eval_chunk(data, chunk_len):
+    """ Get random chunk
+
+        Args:
+            data: torch.Tensor (random len)
+            chunk_len: chunk length
+
+        Returns:
+            torch.Tensor (exactly chunk_len)
+    """
+    data_len = len(data)
+    data_shape = data.shape
+    # random chunk
+    if data_len >= chunk_len:
+        chunk_start = random.randint(0, data_len - chunk_len)
+        data = data[chunk_start:chunk_start + chunk_len]
+        # re-clone the data to avoid memory leakage
+        if type(data) == torch.Tensor:
+            data = data.clone()
+        else:  # np.array
+            data = data.copy()
+    else:
+        # padding
+        repeat_factor = chunk_len // data_len + 1
+        repeat_shape = repeat_factor if len(data_shape) == 1 else (repeat_factor, 1)
+        if type(data) == torch.Tensor:
+            data = data.repeat(repeat_shape)
+        else:  # np.array
+            data = np.tile(data, repeat_shape)
+        data = data[:chunk_len]
+
+    return data

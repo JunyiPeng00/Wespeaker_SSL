@@ -23,18 +23,20 @@ ml GCC
 
 . ./path.sh || exit 1
 
-stage=3
+stage=8
 stop_stage=8
 
 data=data
 data_type="shard"  # shard/raw
 
-config=conf/resnet.yaml
-exp_dir=exp/BASELINE_Resnet
+config=conf/wavlm_base_MHFA_LR.yaml # wavlm_base_MHFA_LR
+exp_dir=exp/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch40
 gpus="[0,1,2,3,4,5,6,7]"
+# gpus="[0,1,2,3]"
+
 # gpus="[0,1]"
 
-num_avg=10
+num_avg=3
 checkpoint=
 
 trials="vox1_O_cleaned.kaldi vox1_E_cleaned.kaldi vox1_H_cleaned.kaldi"
@@ -42,7 +44,7 @@ score_norm_method="asnorm"  # asnorm/snorm
 top_n=300
 
 # setup for large margin fine-tuning
-lm_config=conf/ecapa_tdnn_lm.yaml
+lm_config=conf/wavlm_base_MHFA_LR_lm.yaml
 
 . tools/parse_options.sh || exit 1
 
@@ -67,9 +69,9 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     fi
   done
   # Convert all musan data to LMDB
-  python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
+  # python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
   # Convert all rirs data to LMDB
-  python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
+  # python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
@@ -85,6 +87,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
       --train_label ${data}/vox2_dev/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
+      --master_port=21285 \
       ${checkpoint:+--checkpoint $checkpoint}
 fi
 
@@ -97,19 +100,10 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     --num ${num_avg}
 
   model_path=$avg_model
-  if [[ $config == *repvgg*.yaml ]]; then
-    echo "convert repvgg model ..."
-    python wespeaker/models/convert_repvgg.py \
-      --config $exp_dir/config.yaml \
-      --load $avg_model \
-      --save $exp_dir/models/convert_model.pt
-    model_path=$exp_dir/models/convert_model.pt
-  fi
-
   echo "Extract embeddings ..."
   local/extract_vox.sh \
     --exp_dir $exp_dir --model_path $model_path \
-    --nj 8 --gpus $gpus --data_type $data_type --data ${data}
+    --nj 32 --gpus $gpus --data_type $data_type --data ${data}
 fi
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
@@ -135,10 +129,10 @@ fi
 
 if [ ${stage} -le 7 ] && [ ${stop_stage} -ge 7 ]; then
   echo "Export the best model ..."
-  # python wespeaker/bin/export_jit.py \
-  #   --config $exp_dir/config.yaml \
-  #   --checkpoint $exp_dir/models/avg_model.pt \
-  #   --output_file $exp_dir/models/final.zip
+  python wespeaker/bin/export_jit.py \
+    --config $exp_dir/config.yaml \
+    --checkpoint $exp_dir/models/avg_model.pt \
+    --output_file $exp_dir/models/final.zip
 fi
 
 if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
@@ -147,7 +141,7 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
   mkdir -p ${lm_exp_dir}/models
   # Use the pre-trained average model to initialize the LM training
   cp ${exp_dir}/models/avg_model.pt ${lm_exp_dir}/models/model_0.pt
-  bash run.sh --stage 3 --stop_stage 7 \
+  bash run_HUBERT2.sh --stage 3 --stop_stage 7 \
       --data ${data} \
       --data_type ${data_type} \
       --config ${lm_config} \

@@ -1,5 +1,5 @@
 ### train configuraton
-
+PORT: 25311
 exp_dir: exp/ResNet34-TSTP-emb256-fbank80-num_frms200-aug0.6-spTrue-saFalse-ArcMargin-SGD-epoch150
 gpus: "[0,1]"
 num_avg: 10
@@ -45,7 +45,7 @@ dataset_args:
     max_f: 8
     prob: 0.6
 
-model: ResNet34 # ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
+model: ResNet101 # ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
 model_init: null
 model_args:
   feat_dim: 80

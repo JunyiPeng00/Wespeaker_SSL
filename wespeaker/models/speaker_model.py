@@ -17,6 +17,11 @@ import wespeaker.models.ecapa_tdnn as ecapa_tdnn
 import wespeaker.models.resnet as resnet
 import wespeaker.models.repvgg as repvgg
 import wespeaker.models.campplus as campplus
+import wespeaker.models.Transformer_WavLM as Transformer_WavLM
+import wespeaker.models.Transformer_WavLM2 as Transformer_WavLM2
+import wespeaker.models.Transformer_WavLM_Large as Transformer_WavLM_Large
+
+import wespeaker.models.Transformer_WavLM_DINO as Conformer
 
 def get_speaker_model(model_name: str):
     if model_name.startswith("XVEC"):
@@ -29,6 +34,14 @@ def get_speaker_model(model_name: str):
         return getattr(repvgg, model_name)
     elif model_name.startswith("CAMPPlus"):
         return getattr(campplus, model_name)
+    elif model_name.startswith("WavLM_Base_MHFA"):
+        return getattr(Transformer_WavLM, model_name)
+    elif model_name.startswith("WavLM_Base_LR_MHFA"):
+        return getattr(Transformer_WavLM2, model_name)
+    elif model_name.startswith("WavLM_Large_MHFA"):
+        return getattr(Transformer_WavLM_Large, model_name)
+    elif model_name.startswith("Conformer"):
+        return getattr(Conformer, model_name)
     else:  # model_name error !!!
         print(model_name + " not found !!!")
         exit(1)

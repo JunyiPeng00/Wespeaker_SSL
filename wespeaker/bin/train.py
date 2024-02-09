@@ -34,7 +34,6 @@ from wespeaker.utils.file_utils import read_table
 from wespeaker.utils.utils import get_logger, parse_config_or_kwargs, set_seed, \
     spk2id
 
-
 def train(config='conf/config.yaml', **kwargs):
     """Trains a model on the given features and spk labels.
 
@@ -45,6 +44,8 @@ def train(config='conf/config.yaml', **kwargs):
     configs = parse_config_or_kwargs(config, **kwargs)
     checkpoint = configs.get('checkpoint', None)
     # dist configs
+    os.environ['MASTER_ADDR']='localhost'
+    os.environ['MASTER_PORT']=str(configs['PORT'])
     rank = int(os.environ['RANK'])
     world_size = int(os.environ['WORLD_SIZE'])
     gpu = int(configs['gpus'][rank])
@@ -74,6 +75,7 @@ def train(config='conf/config.yaml', **kwargs):
 
     # seed
     set_seed(configs['seed'] + rank)
+    # set_seed(configs['seed'])
 
     # train data
     train_label = configs['train_label']
@@ -134,8 +136,8 @@ def train(config='conf/config.yaml', **kwargs):
         # !!!IMPORTANT!!!
         # Try to export the model by script, if fails, we should refine
         # the code to satisfy the script export requirements
-        script_model = torch.jit.script(model)
-        script_model.save(os.path.join(model_dir, 'init.zip'))
+        # script_model = torch.jit.script(model)
+        # script_model.save(os.path.join(model_dir, 'init.zip'))
 
     # If specify checkpoint, load some info from checkpoint.
     if checkpoint is not None:
@@ -148,6 +150,13 @@ def train(config='conf/config.yaml', **kwargs):
     logger.info('start_epoch: {}'.format(start_epoch))
 
     # ddp_model
+    # indices_to_find = [483, 484]
+
+    # for idx, (name, param) in enumerate(model.named_parameters()):
+    #     if idx in indices_to_find:
+    #         print(f"Index: {idx}, Parameter Name: {name}, Dimension: {param.size()}")
+
+
     model.cuda()
     ddp_model = torch.nn.parallel.DistributedDataParallel(model)
     device = torch.device("cuda")
