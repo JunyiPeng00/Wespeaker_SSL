@@ -6,12 +6,12 @@
 #SBATCH --gpus-per-node 8
 #SBATCH --nodes 1
 
-WORK_DIR=/mnt/proj3/open-24-5/pengjy_new/wespeaker/examples/voxceleb/v2
+# WORK_DIR=/mnt/proj3/open-24-5/pengjy_new/wespeaker/examples/voxceleb/v2
 
-source /mnt/proj3/open-24-5/pengjy_new/Support/miniconda/bin/activate /mnt/proj3/open-24-5/pengjy_new/Support/miniconda/envs/wespeaker
+# source /mnt/proj3/open-24-5/pengjy_new/Support/miniconda/bin/activate /mnt/proj3/open-24-5/pengjy_new/Support/miniconda/envs/wespeaker
 
-# which python
-cd $WORK_DIR
+# # which python
+# cd $WORK_DIR
 
 . ./path.sh || exit 1
 
@@ -23,8 +23,8 @@ ml GCC
 
 . ./path.sh || exit 1
 
-stage=3
-stop_stage=8
+stage=1
+stop_stage=1
 
 data=data
 data_type="shard"  # shard/raw

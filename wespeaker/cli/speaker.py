@@ -18,7 +18,7 @@ import os
 import sys
 
 import numpy as np
-from silero_vad import vad
+# from silero_vad import vad
 import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi

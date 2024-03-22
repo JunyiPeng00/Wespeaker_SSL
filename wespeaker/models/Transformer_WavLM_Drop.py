@@ -10,13 +10,12 @@ from torch.nn.utils import remove_weight_norm
 from wespeaker.models.ssl.modules import GradMultiply
 from wespeaker.models.ssl_backend import *
 
-class WavLM_Base_MHFA(nn.Module):
-    def __init__(self,model_path, pooling, head_nb, embed_dim, group):
-        super(WavLM_Base_MHFA, self).__init__()
+class WavLM_Base_Drop(nn.Module):
+    def __init__(self,model_path, pooling, head_nb, embed_dim, group, fixed=False):
+        super(WavLM_Base_Drop, self).__init__()
         checkpoint = torch.load(model_path)
-        print(pooling)
-        checkpoint['cfg']['encoder_layerdrop']=0.0
-
+        print(checkpoint['cfg']['encoder_layerdrop'])
+        self.fixed_SSL = fixed
         cfg = WavLMConfig(checkpoint['cfg'])
         self.model = WavLM(cfg)
         # self.model = remove_weight_norm(self.model)
@@ -52,8 +51,12 @@ class WavLM_Base_MHFA(nn.Module):
     def forward(self,wav_and_flag):
         
         x = wav_and_flag
-        # with torch.no_grad():
-        rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
+        if self.fixed_SSL:
+            with torch.no_grad():
+                rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
+        else:
+            rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
+
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
         

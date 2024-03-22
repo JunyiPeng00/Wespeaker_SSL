@@ -81,26 +81,26 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
 
   # mkdir -p ${data}/musan ${data}/rirs ${data}/vox1 ${data}/vox2_dev
   # musan
-  # find /mnt/proj3/open-24-5/pengjy_new/Data/musan -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' >${data}/musan/wav.scp
+  # find /home/jpeng/ntt/work/Data/vox/musan -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' >${data}/musan/wav.scp
   # # rirs
-  # find /mnt/proj3/open-24-5/plchot/data_augment/16kHz/simulated_rirs -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' >${data}/rirs/wav.scp
+  # find /home/jpeng/ntt/work/Data/vox/RIRS_NOISES/simulated_rirs -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' >${data}/rirs/wav.scp
   # # vox1
-  # find /mnt/proj3/open-24-5/plchot/data_wav/16kHz/voxceleb_1.1 -type f -name "*.wav" | grep -E ".*/.*/.*/.*/.*\.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' | sort >${data}/vox1/wav.scp
-  # awk '{print $1}' ${data}/vox1/wav.scp | awk -F "/" '{print $0,$1}' >${data}/vox1/utt2spk
-  # ./tools/utt2spk_to_spk2utt.pl ${data}/vox1/utt2spk >${data}/vox1/spk2utt
-  # if [ ! -d ${data}/vox1/trials ]; then
-  #   echo "Download trials for vox1 ..."
-  #   mkdir -p ${data}/vox1/trials
-  #   wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt -O ${data}/vox1/trials/vox1-O\(cleaned\).txt
-  #   wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt -O ${data}/vox1/trials/vox1-H\(cleaned\).txt
-  #   wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt -O ${data}/vox1/trials/vox1-E\(cleaned\).txt
-  #   # transform them into kaldi trial format
-  #   awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-O\(cleaned\).txt >${data}/vox1/trials/vox1_O_cleaned.kaldi
-  #   awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-H\(cleaned\).txt >${data}/vox1/trials/vox1_H_cleaned.kaldi
-  #   awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-E\(cleaned\).txt >${data}/vox1/trials/vox1_E_cleaned.kaldi
-  # fi
+  find /home/tawara/work/db/voxceleb/vox1/ -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' | sort >${data}/vox1/wav.scp
+  awk '{print $1}' ${data}/vox1/wav.scp | awk -F "/" '{print $0,$1}' >${data}/vox1/utt2spk
+  ./tools/utt2spk_to_spk2utt.pl ${data}/vox1/utt2spk >${data}/vox1/spk2utt
+  if [ ! -d ${data}/vox1/trials ]; then
+    echo "Download trials for vox1 ..."
+    mkdir -p ${data}/vox1/trials
+    wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt -O ${data}/vox1/trials/vox1-O\(cleaned\).txt
+    wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt -O ${data}/vox1/trials/vox1-H\(cleaned\).txt
+    wget --no-check-certificate https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt -O ${data}/vox1/trials/vox1-E\(cleaned\).txt
+    # transform them into kaldi trial format
+    awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-O\(cleaned\).txt >${data}/vox1/trials/vox1_O_cleaned.kaldi
+    awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-H\(cleaned\).txt >${data}/vox1/trials/vox1_H_cleaned.kaldi
+    awk '{if($1==0)label="nontarget";else{label="target"}; print $2,$3,label}' ${data}/vox1/trials/vox1-E\(cleaned\).txt >${data}/vox1/trials/vox1_E_cleaned.kaldi
+  fi
   # vox2
-  # find /mnt/proj3/open-24-5/plchot/data_wav/16kHz/voxceleb2/dev -type f -name "*.wav" | grep '/.*/.*/.*/' | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' | sort >${data}/vox2_dev/wav.scp
+  find /home/tawara/work/db/voxceleb/vox2/dev/aac/ -name "*.wav" | awk -F"/" '{print $(NF-2)"/"$(NF-1)"/"$NF,$0}' | sort >${data}/vox2_dev/wav.scp
   awk '{print $1}' ${data}/vox2_dev/wav.scp | awk -F "/" '{print $0,$1}' >${data}/vox2_dev/utt2spk
   ./tools/utt2spk_to_spk2utt.pl ${data}/vox2_dev/utt2spk >${data}/vox2_dev/spk2utt
 

@@ -1,5 +1,5 @@
 ### train configuraton
-PORT: 25182
+PORT: 25191
 exp_dir: exp/WavLM-BasePlus-FullFineTuning-MHFA-emb512
 gpus: "[0,1,2,3,4,5,6,7]"
 num_avg: 2
@@ -11,8 +11,8 @@ save_epoch_interval: 1 # save model every 5 epochs
 log_batch_interval: 100 # log every 100 batchs
 
 dataloader_args:
-  batch_size: 128
-  num_workers: 16
+  batch_size: 128 #128
+  num_workers: 4
   pin_memory: True
   prefetch_factor: 8
   drop_last: True
@@ -50,10 +50,10 @@ model: WavLM_Base_MHFA
 model_init: null
 model_args:
   model_path: '/home/jpeng/ntt/work/Data/pretrained_model/WavLM-Base+.pt'
-  head_nb: 64
+  pooling: "G_MHFA_Conv2D" #Group MHFA
+  head_nb: 128
   embed_dim: 256
-  pooling: "MHFA" #Group 
-  group: 1
+  group: 32 # Param = head_nb * comp_dim
 
 projection_args:
   project_type: "arc_margin_intertopk_subcenter" # add_margin, arc_margin, sphere, softmax

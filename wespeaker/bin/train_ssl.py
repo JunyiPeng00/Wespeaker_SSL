@@ -158,8 +158,8 @@ def train(config='conf/config.yaml', **kwargs):
 
 
     model.cuda()
-    ddp_model = torch.nn.parallel.DistributedDataParallel(model)
-    # ddp_model = torch.nn.parallel.DistributedDataParallel(model,find_unused_parameters=True)
+    # ddp_model = torch.nn.parallel.DistributedDataParallel(model)
+    ddp_model = torch.nn.parallel.DistributedDataParallel(model,find_unused_parameters=True)
 
     device = torch.device("cuda")
 
@@ -216,20 +216,20 @@ def train(config='conf/config.yaml', **kwargs):
     scaler = torch.cuda.amp.GradScaler(enabled=configs['enable_amp'])
     for epoch in range(start_epoch, configs['num_epochs'] + 1):
         train_dataset.set_epoch(epoch)
-
-        run_epoch(train_dataloader,
-                  epoch_iter,
-                  ddp_model,
-                  criterion,
-                  optimizer,
-                  scheduler,
-                  margin_scheduler,
-                  epoch,
-                  logger,
-                  scaler,
-                  enable_amp=configs['enable_amp'],
-                  log_batch_interval=configs['log_batch_interval'],
-                  device=device)
+        with ddp_model.no_sync():
+            run_epoch(train_dataloader,
+                    epoch_iter,
+                    ddp_model,
+                    criterion,
+                    optimizer,
+                    scheduler,
+                    margin_scheduler,
+                    epoch,
+                    logger,
+                    scaler,
+                    enable_amp=configs['enable_amp'],
+                    log_batch_interval=configs['log_batch_interval'],
+                    device=device)
 
         if rank == 0:
             if epoch % configs['save_epoch_interval'] == 0 or epoch >= configs[

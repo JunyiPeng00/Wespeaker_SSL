@@ -46,7 +46,7 @@ dataset_args:
     max_f: 8
     prob: 0.6
 
-model: WavLM_Base_MHFA
+model: WavLM_Base_Drop
 model_init: null
 model_args:
   model_path: '/home/jpeng/ntt/work/Data/pretrained_model/WavLM-Base+.pt'
@@ -54,6 +54,7 @@ model_args:
   embed_dim: 256
   pooling: "MHFA" #Group 
   group: 1
+  fixed: True
 
 projection_args:
   project_type: "arc_margin_intertopk_subcenter" # add_margin, arc_margin, sphere, softmax
