@@ -15,7 +15,7 @@
 # limitations under the License.
 
 exp_dir=
-trials="CNC-Eval-Concat.lst CNC-Eval-Avg.lst"
+trials="vox1_O_cleaned.kaldi"
 data=data
 
 stage=-1
@@ -26,29 +26,29 @@ stop_stage=-1
 
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
   echo "apply cosine scoring ..."
-  mkdir -p ${exp_dir}/scores
-  trials_dir=${data}/eval/trials
+  mkdir -p ${exp_dir}/scores_tmp
+  trials_dir=${data}/vox1/trials
   for x in $trials; do
     echo $x
-    python wespeaker/bin/score.py \
+    python wespeaker/bin/score_tmp.py \
       --exp_dir ${exp_dir} \
-      --eval_scp_path ${exp_dir}/embeddings/eval/xvector.scp \
-      --cal_mean True \
-      --cal_mean_dir ${exp_dir}/embeddings/cnceleb_train \
+      --eval_scp_path ${exp_dir}/embeddings/vox1_O/xvector.scp \
+      --cal_mean False \
+      --cal_mean_dir None \
       ${trials_dir}/${x}
   done
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   echo "compute metrics (EER/minDCF) ..."
-  scores_dir=${exp_dir}/scores
+  scores_dir=${exp_dir}/scores_tmp
   for x in $trials; do
     python wespeaker/bin/compute_metrics.py \
         --p_target 0.01 \
         --c_fa 1 \
         --c_miss 1 \
         ${scores_dir}/${x}.score \
-        2>&1 | tee -a ${scores_dir}/cnc_cos_result
+        2>&1 | tee -a ${scores_dir}/vox1_cos_result_tmp_vox1O
 
     echo "compute DET curve ..."
     python wespeaker/bin/compute_det.py \

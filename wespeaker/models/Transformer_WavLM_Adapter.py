@@ -9,19 +9,33 @@ from einops import rearrange, repeat
 from torch.nn.utils import remove_weight_norm
 from wespeaker.models.ssl.modules import GradMultiply
 from wespeaker.models.ssl_backend import *
-from wespeaker.model.wavlm
+from wespeaker.models.ssl.adapter_wavlm.LoRa_WavLM import WavLM as LoRa_WavLM 
+from wespeaker.models.ssl.adapter_wavlm.MAM_WavLM import WavLM as MAM_WavLM 
+from wespeaker.models.ssl.adapter_wavlm.Parallel_WavLM import WavLM as Parallel_WavLM 
+from wespeaker.models.ssl.adapter_wavlm.Prefix_WavLM import WavLM as Prefix_WavLM 
+from wespeaker.models.ssl.adapter_wavlm.Seq_WavLM import WavLM as Seq_WavLM 
 
-class WavLM_Base_Drop(nn.Module):
+class WavLM_Base_Adapter(nn.Module):
     def __init__(self,model_path, pooling, head_nb, embed_dim, group, adapter_type=None, adapter_dim=128):
-        super(WavLM_Base_Drop, self).__init__()
+        super(WavLM_Base_Adapter, self).__init__()
         checkpoint = torch.load(model_path)
         print(checkpoint['cfg']['encoder_layerdrop'])
         print(adapter_type)        
-        cfg = WavLMConfig(checkpoint['cfg'])
         if adapter_type is not None:
+            checkpoint['cfg']['adapter_dim'] = adapter_dim
+            cfg = WavLMConfig(checkpoint['cfg'])
             if adapter_type == 'SeqAdapter':
-                self.model = 
+                self.model = Seq_WavLM(cfg)
+            elif adapter_type == 'ParallelAdapter':
+                self.model = Parallel_WavLM(cfg)
+            elif adapter_type == 'MAMAdapter':
+                self.model = MAM_WavLM(cfg)
+            elif adapter_type == 'LoRaAdapter':
+                self.model = LoRa_WavLM(cfg)
+            elif adapter_type == 'PrefixAdapter':
+                self.model = Prefix_WavLM(cfg)                                                
         else:
+            cfg = WavLMConfig(checkpoint['cfg'])
             self.model = WavLM(cfg)
         # self.model = remove_weight_norm(self.model)
         self.loadParameters(checkpoint['model'])

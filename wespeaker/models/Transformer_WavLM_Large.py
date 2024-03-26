@@ -8,14 +8,10 @@ from wespeaker.models.ssl.WavLM_Large import *
 from einops import rearrange, repeat
 from torch.nn.utils import remove_weight_norm
 from wespeaker.models.ssl.modules import GradMultiply
-def set_seed(seed):
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
 
 
 class MHFA(nn.Module):
-    def __init__(self,head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
+    def __init__(self,head_nb=8, inputs_dim=768, compression_dim=256, outputs_dim=256):
         super(MHFA, self).__init__()
         self.weights_k = nn.Parameter(data=torch.ones(25),requires_grad=True)
         self.weights_v = nn.Parameter(data=torch.ones(25),requires_grad=True)
@@ -45,15 +41,14 @@ class MHFA(nn.Module):
         return outs
 
 class WavLM_Large_MHFA(nn.Module):
-    def __init__(self,model_path,head_nb,embed_dim,CNN_feature_grad_mult):
+    def __init__(self,model_path, pooling, head_nb, embed_dim, group):
         super(WavLM_Large_MHFA, self).__init__()
 
         checkpoint = torch.load(model_path)
 
         checkpoint['cfg']['encoder_layerdrop']=0.0
-        checkpoint['cfg']['feature_grad_mult']=CNN_feature_grad_mult
+        # checkpoint['cfg']['feature_grad_mult']=CNN_feature_grad_mult
         
-
         cfg = WavLMConfig(checkpoint['cfg'])
         self.model = WavLM(cfg)
         # self.model = remove_weight_norm(self.model)

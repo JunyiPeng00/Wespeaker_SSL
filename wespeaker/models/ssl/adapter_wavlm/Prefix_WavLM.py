@@ -209,6 +209,7 @@ class WavLMConfig:
         self.num_buckets: int = 320     # number of buckets for relative position embedding
         self.max_distance: int = 1280     # maximum distance for relative position embedding
         self.gru_rel_pos: bool = False     # apply gated relative position embedding
+        self.adapter_dim: int = 128
 
         if cfg is not None:
             self.update(cfg)
@@ -366,13 +367,7 @@ class WavLM(nn.Module):
             padding_mask=padding_mask,
             layer=None if output_layer is None else output_layer - 1
         )
-
-        res = {"x": x, "padding_mask": padding_mask, "features": features, "layer_results": layer_results}
-
-        feature = res["features"] if ret_conv else res["x"]
-        if ret_layer_results:
-            feature = (feature, res["layer_results"])
-        return feature, res["padding_mask"]
+        return x, layer_results
 
 
 class ConvFeatureExtractionModel(nn.Module):
@@ -576,7 +571,7 @@ class TransformerEncoder(nn.Module):
 
         x_conv = self.pos_conv(x.transpose(1, 2))
         x_conv = x_conv.transpose(1, 2)
-        x += x_conv
+        x = x + x_conv
 
         if not self.layer_norm_first:
             x = self.layer_norm(x)

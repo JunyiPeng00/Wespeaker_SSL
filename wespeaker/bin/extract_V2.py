@@ -85,7 +85,7 @@ def extract(config='conf/config.yaml', **kwargs):
                 features = features.float().to(device)  # (B,T,F)
                 # print(features.shape)
                 # Forward through model
-                outputs = model(features)  # embed or (embed_a, embed_b)
+                outputs = model.feature(features)  # embed or (embed_a, embed_b)
                 embeds = outputs[-1] if isinstance(outputs, tuple) else outputs
                 embeds = embeds.cpu().detach().numpy()  # (B,F)
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder
+#SBATCH -J Improved_SSL_SPK-Encoder-V2
 #SBATCH -p gpu-a100-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
@@ -14,28 +14,21 @@ cd $WORK_DIR
 . ./path.sh || exit 1
 
 
-stage=8
-stop_stage=8 #6
+stage=3 #3
+stop_stage=6 #6
 
 data=data
 data_type="shard"  # shard/raw
 
-config=conf/wavlm_base_MHFA_LR.yaml # wavlm_base_MHFA_LR
-# config=conf/wavlm_base_MHFA_LR_Head32.yaml # Head is 32
-# config=conf/wavlm_base_MHFA_LR_Head16.yaml # Head is 16
+config=conf/V2/wavlm_base_MHFA_LR.yaml 
 
-exp_dir=exp/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch40
-# exp_dir=exp/WavLM-BasePlus-FullFineTuning-MHFA-Head32-emb256-3s-LRS10-Epoch40
-# exp_dir=exp/WavLM-BasePlus-FullFineTuning-MHFA-Head16-emb256-3s-LRS10-Epoch40
+exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch30
 
 base_port=1024
 max_port=40000
 current_time=$(date +%s)
 port=$((current_time % (max_port - base_port) + base_port))
 
-
-
-# gpus="[0,1,2,3]"
 gpus="[0,1,2,3]"
 
 # gpus="[0]"
@@ -82,7 +75,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Start training ..."
   num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
   torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
-    wespeaker/bin/train.py --config $config \
+    wespeaker/bin/train_V2.py --config $config \
       --exp_dir ${exp_dir} \
       --gpus $gpus \
       --num_avg ${num_avg} \

@@ -11,12 +11,12 @@ from wespeaker.models.ssl.modules import GradMultiply
 from wespeaker.models.ssl_backend import *
 
 class WavLM_Base_MHFA(nn.Module):
-    def __init__(self,model_path, pooling, head_nb, embed_dim, group):
+    def __init__(self,model_path, pooling, head_nb, embed_dim, group,cnn_scale=0.1,layer_drop=0.0):
         super(WavLM_Base_MHFA, self).__init__()
         checkpoint = torch.load(model_path)
         print(pooling)
-        checkpoint['cfg']['encoder_layerdrop']=0.0
-
+        checkpoint['cfg']['encoder_layerdrop']=layer_drop
+        checkpoint['cfg']['feature_grad_mult']=cnn_scale
         cfg = WavLMConfig(checkpoint['cfg'])
         self.model = WavLM(cfg)
         # self.model = remove_weight_norm(self.model)

@@ -1,20 +1,29 @@
 #!/bin/bash
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-Adapter
+#SBATCH -p gpu-2080ti-kishin
+#SBATCH --gres=gpu:4
+#SBATCH -c 4
+WORK_DIR=/home/jpeng/ntt/work/SPKID/examples/cnceleb/v2
 
-# Copyright 2022 Hongji Wang (jijijiang77@gmail.com)
-#           2022 Chengdong Liang (liangchengdong@mail.nwpu.edu.cn)
-#           2022 Zhengyang Chen (chenzhengyang117@gmail.com)
+source /home/jpeng/anaconda3/bin/activate /home/jpeng/anaconda3/envs/wespeaker
+
+# which python
+cd $WORK_DIR
+
 
 . ./path.sh || exit 1
 
-stage=-1
-stop_stage=-1
+stage=3
+stop_stage=6
 
 data=data
 data_type="shard"  # shard/raw
 
-config=conf/resnet.yaml
-exp_dir=exp/ResNet34-TSTP-emb256-fbank80-num_frms200-aug0.6-spTrue-saFalse-ArcMargin-SGD-epoch150
-gpus="[0,1]"
+config=conf/wavlm_base_MHFA_LR.yaml
+exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30
+
+
+gpus="[0,1,2,3]"
 num_avg=10
 checkpoint=
 
@@ -27,10 +36,10 @@ lm_config=conf/resnet_lm.yaml
 
 . tools/parse_options.sh || exit 1
 
-if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
-  echo "Preparing datasets ..."
-  ./local/prepare_data.sh --stage 2 --stop_stage 4 --data ${data}
-fi
+# if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
+#   echo "Preparing datasets ..."
+#   ./local/prepare_data.sh --stage 2 --stop_stage 4 --data ${data}
+# fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   echo "Covert train and test data to ${data_type}..."

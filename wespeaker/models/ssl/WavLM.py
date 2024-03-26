@@ -260,13 +260,7 @@ class WavLM(nn.Module):
         self.dropout_input = nn.Dropout(cfg.dropout_input)
         self.dropout_features = nn.Dropout(cfg.dropout_features)
 
-        # self.feature_grad_mult = cfg.feature_grad_mult        
-        self.feature_grad_mult = 0.1
-
-
-        # self.mask_emb = nn.Parameter(
-        #     torch.FloatTensor(cfg.encoder_embed_dim).uniform_()
-        # )
+        self.feature_grad_mult = cfg.feature_grad_mult        
 
         self.encoder = TransformerEncoder(cfg)
         self.layer_norm = LayerNorm(self.embed)
@@ -332,12 +326,18 @@ class WavLM(nn.Module):
         output_layer: Optional[int] = None,
         ret_layer_results: bool = False,
     ):
-        # with torch.no_grad():
-        features = self.feature_extractor(source)
+        if self.feature_grad_mult > 0:
+            features = self.feature_extractor(source)
+            features = features[-1].transpose(1, 2)
+            if self.feature_grad_mult != 1.0:
+                features = GradMultiply.apply(features, self.feature_grad_mult)
+        else:
+            with torch.no_grad():
+                features = self.feature_extractor(source)
+                features = features[-1].transpose(1, 2)
+
 
         cnn_outs = features
-        features = features[-1].transpose(1, 2)
-        features = GradMultiply.apply(features, self.feature_grad_mult)
         features = self.layer_norm(features)
 
         if padding_mask is not None:

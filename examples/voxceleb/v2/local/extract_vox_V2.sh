@@ -1,8 +1,6 @@
 #!/bin/bash
-# coding:utf-8
 
 # Copyright (c) 2022 Hongji Wang (jijijiang77@gmail.com)
-#               2022 Chengdong Liang (liangchengdong@mail.nwpu.edu.cn)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,15 +18,15 @@ exp_dir=''
 model_path=''
 nj=4
 gpus="[0,1]"
-data_type="shard/raw"  # shard/raw
+data_type="shard"  # shard/raw/feat
 data=data
 
 . tools/parse_options.sh
 set -e
 
-data_name_array=("cnceleb_train" "eval")
-data_list_path_array=("${data}/cnceleb_train/${data_type}.list" "${data}/eval/${data_type}.list")
-data_scp_path_array=("${data}/cnceleb_train/wav.scp" "${data}/eval/wav.scp")
+data_name_array=("vox2_dev" "vox1")
+data_list_path_array=("${data}/vox2_dev/${data_type}.list" "${data}/vox1/${data_type}.list")
+data_scp_path_array=("${data}/vox2_dev/wav.scp" "${data}/vox1/wav.scp") # to count the number of wavs
 nj_array=($nj $nj)
 batch_size_array=(16 1) # batch_size of test set must be 1 !!!
 num_workers_array=(4 1)
@@ -36,7 +34,7 @@ count=${#data_name_array[@]}
 
 for i in $(seq 0 $(($count - 1))); do
   wavs_num=$(wc -l ${data_scp_path_array[$i]} | awk '{print $1}')
-  bash tools/extract_embedding.sh --exp_dir ${exp_dir} \
+  bash tools/extract_embedding_V2.sh --exp_dir ${exp_dir} \
     --model_path $model_path \
     --data_type ${data_type} \
     --data_list ${data_list_path_array[$i]} \
@@ -51,11 +49,3 @@ done
 wait
 
 echo "Embedding dir is (${exp_dir}/embeddings)."
-
-echo "mean vector of enroll"
-python tools/vector_mean.py \
-  --spk2utt ${data}/eval/enroll.map \
-  --xvector_scp $exp_dir/embeddings/eval/xvector.scp \
-  --spk_xvector_ark $exp_dir/embeddings/eval/enroll_spk_xvector.ark
-
-cat $exp_dir/embeddings/eval/enroll_spk_xvector.scp >> $exp_dir/embeddings/eval/xvector.scp

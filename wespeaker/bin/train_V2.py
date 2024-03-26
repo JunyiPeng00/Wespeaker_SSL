@@ -23,16 +23,29 @@ import torch
 import torch.distributed as dist
 import yaml
 from torch.utils.data import DataLoader
-
+import torch.nn as nn
 import wespeaker.utils.schedulers as schedulers
 from wespeaker.dataset.dataset import Dataset
 from wespeaker.models.projections import get_projection
 from wespeaker.models.speaker_model import get_speaker_model
 from wespeaker.utils.checkpoint import load_checkpoint, save_checkpoint
-from wespeaker.utils.executor import run_epoch
+from wespeaker.utils.executor_V2 import run_epoch
 from wespeaker.utils.file_utils import read_table
 from wespeaker.utils.utils import get_logger, parse_config_or_kwargs, set_seed, \
     spk2id
+
+class SpeakerNet(nn.Module):
+    def __init__(self, model, projecNet):
+        super(SpeakerNet, self).__init__()
+        self.speaker_extractor = model
+        self.projection = projecNet
+    def forward(self, x, y):
+        x = self.speaker_extractor(x)
+        x = self.projection(x, y)
+        return x
+    def feature(self, x):
+        return self.speaker_extractor(x)
+
 
 def train(config='conf/config.yaml', **kwargs):
     """Trains a model on the given features and spk labels.
@@ -128,7 +141,8 @@ def train(config='conf/config.yaml', **kwargs):
             logger.info('No speed perturb while doing large margin fine-tuning')
             configs['dataset_args']['speed_perturb'] = False
     projection = get_projection(configs['projection_args'])
-    model.add_module("projection", projection)
+    # model.add_module("projection", projection)
+    model = SpeakerNet(model,projection)
     if rank == 0:
         # print model
         for line in pformat(model).split('\n'):
@@ -159,7 +173,7 @@ def train(config='conf/config.yaml', **kwargs):
 
     model.cuda()
     # ddp_model = torch.nn.parallel.DistributedDataParallel(model)
-    ddp_model = torch.nn.parallel.DistributedDataParallel(model,find_unused_parameters=True)
+    ddp_model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
     device = torch.device("cuda")
     total_learnable = 0
     SpkEnc_learnable = 0
@@ -239,20 +253,19 @@ def train(config='conf/config.yaml', **kwargs):
     scaler = torch.cuda.amp.GradScaler(enabled=configs['enable_amp'])
     for epoch in range(start_epoch, configs['num_epochs'] + 1):
         train_dataset.set_epoch(epoch)
-        with ddp_model.no_sync():
-            run_epoch(train_dataloader,
-                    epoch_iter,
-                    ddp_model,
-                    criterion,
-                    optimizer,
-                    scheduler,
-                    margin_scheduler,
-                    epoch,
-                    logger,
-                    scaler,
-                    enable_amp=configs['enable_amp'],
-                    log_batch_interval=configs['log_batch_interval'],
-                    device=device)
+        run_epoch(train_dataloader,
+                epoch_iter,
+                ddp_model,
+                criterion,
+                optimizer,
+                scheduler,
+                margin_scheduler,
+                epoch,
+                logger,
+                scaler,
+                enable_amp=configs['enable_amp'],
+                log_batch_interval=configs['log_batch_interval'],
+                device=device)
 
         if rank == 0:
             if epoch % configs['save_epoch_interval'] == 0 or epoch >= configs[

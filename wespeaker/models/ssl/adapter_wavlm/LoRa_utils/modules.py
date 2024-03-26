@@ -14,7 +14,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import Parameter
 import torch.nn.functional as F
-from wespeaker.models.ssl.adapter_wavlm.adapter_wavlm.MultiHeadAttentionModified import multi_head_attention_forward_Modified
+from wespeaker.models.ssl.adapter_wavlm.LoRa_utils.MultiHeadAttentionModified import multi_head_attention_forward_Modified
 
 
 class TransposeLast(nn.Module):
