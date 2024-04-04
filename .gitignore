@@ -7,10 +7,8 @@ examples/cnceleb/v2/data/
 examples/cnceleb/v2/exp/
 *.pyc
 *.out
-*.yaml
 !examples/voxceleb/v2/conf/wavlm_base_MHFA_LR.yaml
 !examples/voxceleb/v2/conf/wavlm_base_MHFA_LR_lm.yaml
 !examples/voxceleb/v2/run_HUBERT2.sh
 !examples/voxceleb/v2/run_HUBERT2_V2.sh
-!examples/voxceleb/v2/exp/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch40/config.yaml
-!examples/voxceleb/v2/exp/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch40/train.log
+
