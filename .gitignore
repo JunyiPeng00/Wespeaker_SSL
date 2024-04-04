@@ -7,6 +7,8 @@ examples/cnceleb/v2/data/
 examples/cnceleb/v2/exp/
 *.pyc
 *.out
+!examples/voxceleb/v2/conf/run_Aux_ModelTest.yaml
+!examples/voxceleb/v2/conf/run_Aux_Vox1_Eval.yaml
 !examples/voxceleb/v2/conf/wavlm_base_MHFA_LR.yaml
 !examples/voxceleb/v2/conf/wavlm_base_MHFA_LR_lm.yaml
 !examples/voxceleb/v2/run_HUBERT2.sh
