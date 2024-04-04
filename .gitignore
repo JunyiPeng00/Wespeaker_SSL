@@ -5,6 +5,8 @@ examples/voxceleb/v2/*.sh
 examples/voxceleb/v2/conf/extractor/*
 examples/cnceleb/v2/data/
 examples/cnceleb/v2/exp/
+examples/voxceleb/v2/conf/
+
 *.pyc
 *.out
 !examples/voxceleb/v2/conf/wavlm_base_MHFA_LR.yaml
