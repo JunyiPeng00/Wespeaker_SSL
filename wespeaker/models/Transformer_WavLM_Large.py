@@ -11,7 +11,7 @@ from wespeaker.models.ssl.modules import GradMultiply
 
 
 class MHFA(nn.Module):
-    def __init__(self,head_nb=8, inputs_dim=768, compression_dim=256, outputs_dim=256):
+    def __init__(self,head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
         super(MHFA, self).__init__()
         self.weights_k = nn.Parameter(data=torch.ones(25),requires_grad=True)
         self.weights_v = nn.Parameter(data=torch.ones(25),requires_grad=True)
@@ -41,29 +41,30 @@ class MHFA(nn.Module):
         return outs
 
 class WavLM_Large_MHFA(nn.Module):
-    def __init__(self,model_path, pooling, head_nb, embed_dim, group):
+    def __init__(self,model_path, pooling, head_nb, embed_dim, group=1, cnn_scale=1.0,layer_drop=0.05,frozen=False):
         super(WavLM_Large_MHFA, self).__init__()
-
         checkpoint = torch.load(model_path)
-
-        checkpoint['cfg']['encoder_layerdrop']=0.0
-        # checkpoint['cfg']['feature_grad_mult']=CNN_feature_grad_mult
-        
+        checkpoint['cfg']['encoder_layerdrop']=layer_drop
+        checkpoint['cfg']['feature_grad_mult']=cnn_scale
         cfg = WavLMConfig(checkpoint['cfg'])
+        print('During the training, SSL is kept frozen:{}\n'.format(frozen))
         self.model = WavLM(cfg)
-        # self.model = remove_weight_norm(self.model)
         self.loadParameters(checkpoint['model'])
+        self.frozen = frozen
         self.back_end = MHFA(inputs_dim=1024, head_nb=head_nb,outputs_dim=embed_dim)
-        self.feature_grad_mult = 0.01
+        self.feature_grad_mult = 0.02
 
     def forward(self,wav_and_flag):
         
         x = wav_and_flag
-        # with torch.no_grad():
-        rep, layer_results = self.model.extract_features(x[:,:480000], output_layer=25)
+        if self.frozen:
+            with torch.no_grad():
+                rep, layer_results = self.model.extract_features(x[:,:480000], output_layer=25)
+        else:
+            rep, layer_results = self.model.extract_features(x[:,:480000], output_layer=25)
+
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
-        
         x = GradMultiply.apply(x, self.feature_grad_mult)
         
         spk_embedding = self.back_end(x)
@@ -79,7 +80,6 @@ class WavLM_Large_MHFA(nn.Module):
         for name, param in loaded_state.items():
             origname = name;
             
-
             if name not in self_state:
                 # print("%s is not in the model."%origname);
                 continue;

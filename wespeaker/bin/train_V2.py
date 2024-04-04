@@ -43,8 +43,6 @@ class SpeakerNet(nn.Module):
         x = self.speaker_extractor(x)
         x = self.projection(x, y)
         return x
-    def feature(self, x):
-        return self.speaker_extractor(x)
 
 
 def train(config='conf/config.yaml', **kwargs):
@@ -164,13 +162,6 @@ def train(config='conf/config.yaml', **kwargs):
     logger.info('start_epoch: {}'.format(start_epoch))
 
     # ddp_model
-    # indices_to_find = [483, 484]
-
-    # for idx, (name, param) in enumerate(model.named_parameters()):
-    #     if idx in indices_to_find:
-    #         print(f"Index: {idx}, Parameter Name: {name}, Dimension: {param.size()}")
-
-
     model.cuda()
     # ddp_model = torch.nn.parallel.DistributedDataParallel(model)
     ddp_model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
@@ -181,12 +172,12 @@ def train(config='conf/config.yaml', **kwargs):
     logger.info("<== Adapter-Tuning ==>")
     logger.info(configs.get('adapter_tuning', False))
     if configs.get('adapter_tuning', False):
-        logger.info("Adapter Type is: " + configs['model_args']['adapter_type'])
+        # if configs['model_args']['adapter_type'] is not None:
+        #     logger.info("Adapter Type is: " + configs['model_args']['adapter_type'])
         for name, param in ddp_model.named_parameters():
             if "adapter" in name:
                 param.requires_grad = True
                 total_learnable += param.numel()
-                # print(name)
             elif "layer_norm" in name:
                 param.requires_grad = True
                 total_learnable += param.numel()

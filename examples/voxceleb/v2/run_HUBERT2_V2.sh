@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J Improved_SSL_SPK-Encoder-V2
-#SBATCH -p gpu-a100-kishin
+#SBATCH -p gpu-a6000-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
 
@@ -20,9 +20,13 @@ stop_stage=6 #6
 data=data
 data_type="shard"  # shard/raw
 
-config=conf/V2/wavlm_base_MHFA_LR.yaml 
+# config=conf/V2/wavlm_base_MHFA_LR.yaml 
+# config=conf/V2/wavlm_base_MHFA_LR2.yaml 
+config=conf/V2/wavlm_base_MHFA_LR3.yaml 
 
-exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch30
+# exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch30
+exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch20-CNN_Learnable
+# exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch20-CNN_Learnable-speed
 
 base_port=1024
 max_port=40000
@@ -126,10 +130,10 @@ fi
 
 if [ ${stage} -le 7 ] && [ ${stop_stage} -ge 7 ]; then
   echo "Export the best model ..."
-  python wespeaker/bin/export_jit.py \
-    --config $exp_dir/config.yaml \
-    --checkpoint $exp_dir/models/avg_model.pt \
-    --output_file $exp_dir/models/final.zip
+  # python wespeaker/bin/export_jit.py \
+  #   --config $exp_dir/config.yaml \
+  #   --checkpoint $exp_dir/models/avg_model.pt \
+  #   --output_file $exp_dir/models/final.zip
 fi
 
 if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then

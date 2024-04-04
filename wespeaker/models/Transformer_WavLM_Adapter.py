@@ -16,10 +16,11 @@ from wespeaker.models.ssl.adapter_wavlm.Prefix_WavLM import WavLM as Prefix_WavL
 from wespeaker.models.ssl.adapter_wavlm.Seq_WavLM import WavLM as Seq_WavLM 
 
 class WavLM_Base_Adapter(nn.Module):
-    def __init__(self,model_path, pooling, head_nb, embed_dim, group, adapter_type=None, adapter_dim=128):
+    def __init__(self,model_path, pooling, head_nb, embed_dim, group, adapter_type=None, adapter_dim=128, cnn_scale=0.0, layer_drop=0.05):
         super(WavLM_Base_Adapter, self).__init__()
         checkpoint = torch.load(model_path)
-        print(checkpoint['cfg']['encoder_layerdrop'])
+        checkpoint['cfg']['encoder_layerdrop']=layer_drop
+        checkpoint['cfg']['feature_grad_mult']=cnn_scale
         print(adapter_type)        
         if adapter_type is not None:
             checkpoint['cfg']['adapter_dim'] = adapter_dim

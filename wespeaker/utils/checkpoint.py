@@ -17,8 +17,23 @@ import torch
 
 
 def load_checkpoint(model: torch.nn.Module, path: str):
-    checkpoint = torch.load(path, map_location='cpu')
-    model.load_state_dict(checkpoint, strict=False)
+    loaded_state = torch.load(path, map_location='cpu')
+    self_state = model.state_dict();
+    for name, param in loaded_state.items():
+        origname = name;
+        if name not in self_state:
+            name = name.replace("speaker_extractor.", "");
+
+            if name not in self_state:
+                print("%s is not in the model."%origname);
+                continue;
+
+        if self_state[name].size() != loaded_state[origname].size():
+            print("Wrong parameter length: %s, model: %s, loaded: %s"%(origname, self_state[name].size(), loaded_state[origname].size()));
+            continue;
+
+        self_state[name].copy_(param);
+    # model.load_state_dict(checkpoint, strict=False)
 
 
 def save_checkpoint(model: torch.nn.Module, path: str):

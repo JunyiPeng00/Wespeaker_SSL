@@ -54,6 +54,8 @@ model_args:
   head_nb: 128
   embed_dim: 256
   group: 32 # Param = head_nb * comp_dim
+  cnn_scale: 0.0
+  layer_drop: 0.05 
 
 projection_args:
   project_type: "arc_margin_intertopk_subcenter" # add_margin, arc_margin, sphere, softmax

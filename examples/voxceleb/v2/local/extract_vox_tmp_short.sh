@@ -24,27 +24,27 @@ data=data
 . tools/parse_options.sh
 set -e
 
-data_name_array=("vox2_dev" "vox1")
-data_list_path_array=("${data}/vox2_dev/${data_type}.list" "${data}/vox1/${data_type}.list")
-data_scp_path_array=("${data}/vox2_dev/wav.scp" "${data}/vox1/wav.scp") # to count the number of wavs
-nj_array=($nj $nj)
-batch_size_array=(16 1) # batch_size of test set must be 1 !!!
-num_workers_array=(4 1)
+data_name_array=("vox1_O")
+data_list_path_array=${data}/vox1_O/${data_type}.list
+data_scp_path_array=${data}/vox1_O/wav.scp # to count the number of wavs
+nj_array=$nj
+batch_size_array=1 # batch_size of test set must be 1 !!!
+num_workers_array=1
 count=${#data_name_array[@]}
 
-for i in $(seq 0 $(($count - 1))); do
-  wavs_num=$(wc -l ${data_scp_path_array[$i]} | awk '{print $1}')
-  bash tools/extract_embedding_V2.sh --exp_dir ${exp_dir} \
+# for i in $(seq 0 $(($count - 1))); do
+  wavs_num=$(wc -l ${data_scp_path_array} | awk '{print $1}')
+  bash tools/extract_embedding_short.sh --exp_dir ${exp_dir} \
     --model_path $model_path \
     --data_type ${data_type} \
-    --data_list ${data_list_path_array[$i]} \
+    --data_list ${data_list_path_array} \
     --wavs_num ${wavs_num} \
-    --store_dir ${data_name_array[$i]} \
-    --batch_size ${batch_size_array[$i]} \
-    --num_workers ${num_workers_array[$i]} \
-    --nj ${nj_array[$i]} \
+    --store_dir ${data_name_array} \
+    --batch_size ${batch_size_array} \
+    --num_workers ${num_workers_array} \
+    --nj ${nj_array} \
     --gpus $gpus &
-done
+# done
 
 wait
 

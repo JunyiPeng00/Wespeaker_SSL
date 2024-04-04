@@ -32,8 +32,8 @@ gpus="[0,1]"
 . tools/parse_options.sh
 set -e
 
-embed_dir=${exp_dir}/embeddings/${store_dir}
-log_dir=${embed_dir}/log
+embed_dir=${exp_dir}/embeddings/${store_dir}_shortU
+log_dir=${embed_dir}/log_shortU
 [ ! -d ${log_dir} ] && mkdir -p ${log_dir}
 
 # split the data_list file into sub_file, then we can use multi-gpus to extract embeddings
@@ -48,7 +48,7 @@ for suffix in $(seq 0 $(($nj - 1))); do
   suffix=$(printf '%03d' $suffix)
   data_list_subfile=${log_dir}/split_${suffix}
   embed_ark=${embed_dir}/xvector_${suffix}.ark
-  CUDA_VISIBLE_DEVICES=${gpus[$idx]} python wespeaker/bin/extract_V2.py \
+  CUDA_VISIBLE_DEVICES=${gpus[$idx]} python wespeaker/bin/extract_short.py \
     --config ${exp_dir}/config.yaml \
     --model_path ${model_path} \
     --data_type ${data_type} \
@@ -59,7 +59,7 @@ for suffix in $(seq 0 $(($nj - 1))); do
     --reverb_data ${reverb_data} \
     --noise_data ${noise_data} \
     --aug-prob ${aug_prob} \
-    >${log_dir}/split_${suffix}.log 2>&1 &
+    >${log_dir}/split_${suffix}_shortU.log 2>&1 &
 done
 
 wait

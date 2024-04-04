@@ -51,16 +51,12 @@ class WavLM_Base_Drop(nn.Module):
     def forward(self,wav_and_flag):
         
         x = wav_and_flag
-        if self.fixed_SSL:
-            with torch.no_grad():
-                rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
-        else:
+        with torch.no_grad():
             rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
-
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
         
-        x = GradMultiply.apply(x, self.feature_grad_mult)
+        # x = GradMultiply.apply(x, self.feature_grad_mult)
         
         spk_embedding = self.back_end(x)
         

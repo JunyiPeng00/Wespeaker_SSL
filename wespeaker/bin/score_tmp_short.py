@@ -31,8 +31,8 @@ def calculate_mean_from_kaldi_vec(scp_path):
             mean_vec = np.zeros_like(vec)
         mean_vec += vec
         vec_num += 1
-
-    return mean_vec / vec_num
+    return np.mean(mean_vec / vec_num,axis=0)
+    # return mean_vec / vec_num
 
 
 def trials_cosine_score(eval_scp_path='',
@@ -52,7 +52,7 @@ def trials_cosine_score(eval_scp_path='',
         emb_dict[utt] = emb
     for trial in trials:
         store_path = os.path.join(store_dir,
-                                  os.path.basename(trial) + '_tmp.score')
+                                  os.path.basename(trial) + '_tmp_short.score')
         with open(trial, 'r') as trial_r, open(store_path, 'w') as w_f:
             lines = trial_r.readlines()
             for line in tqdm(lines,
@@ -60,8 +60,7 @@ def trials_cosine_score(eval_scp_path='',
                                  os.path.basename(trial))):
                 segs = line.strip().split()
                 emb1, emb2 = emb_dict[segs[0]], emb_dict[segs[1]]
-                cos_score = cosine_similarity(emb1.reshape(1, -1),
-                                              emb2.reshape(1, -1))[0][0]
+                cos_score = cosine_similarity(emb1, emb2).mean()
 
                 if len(segs) == 3:  # enroll_name test_name target/nontarget
                     w_f.write('{} {} {:.5f} {}\n'.format(

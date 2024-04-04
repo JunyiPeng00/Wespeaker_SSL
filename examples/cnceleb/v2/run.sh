@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-Adapter
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM
 #SBATCH -p gpu-2080ti-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
@@ -13,14 +13,29 @@ cd $WORK_DIR
 
 . ./path.sh || exit 1
 
+base_port=1024
+max_port=40000
+current_time=$(date +%s)
+port=$((current_time % (max_port - base_port) + base_port))
+
 stage=3
 stop_stage=6
 
 data=data
 data_type="shard"  # shard/raw
 
-config=conf/wavlm_base_MHFA_LR.yaml
-exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30
+# config=conf/wavlm_base_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed
+
+# config=conf/wavlm_base_MHFA_LR3.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch20
+# exp_dir=exp/TMP/TMP_${port}
+
+config=conf/wavlm_base_CA_MHFA_LR3_CNNFixed.yaml
+exp_dir=exp/WavLM_BASE_PLUS-CA-MHFA-Epoch30-CNNFixed
+
+config=conf/wavlm_base_CA_MHFA_LR3_CNNFixed_AAM.yaml
+exp_dir=exp/WavLM_BASE_PLUS-CA-MHFA-Epoch30-CNNFixed-AAM
 
 
 gpus="[0,1,2,3]"
@@ -66,7 +81,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Start training ..."
   num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
   torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
-    wespeaker/bin/train.py --config $config \
+    wespeaker/bin/train_V2.py --config $config \
       --exp_dir ${exp_dir} \
       --gpus $gpus \
       --num_avg ${num_avg} \
@@ -75,6 +90,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
       --train_label ${data}/cnceleb_train/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
+      --master_port ${port} \
       ${checkpoint:+--checkpoint $checkpoint}
 fi
 
@@ -87,14 +103,6 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     --num ${num_avg}
 
   model_path=$avg_model
-  if [[ $config == *repvgg*.yaml ]]; then
-    echo "convert repvgg model ..."
-    python wespeaker/models/convert_repvgg.py \
-      --config $exp_dir/config.yaml \
-      --load $avg_model \
-      --save $exp_dir/models/convert_model.pt
-    model_path=$exp_dir/models/convert_model.pt
-  fi
 
   echo "Extract embeddings ..."
   local/extract_cnc.sh \
