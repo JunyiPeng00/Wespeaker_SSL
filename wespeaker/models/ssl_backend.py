@@ -5,12 +5,12 @@ import torch.nn.functional as F
 from torch.nn import LayerNorm
 
 class MHFA(nn.Module):
-    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
+    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256, nb_layer=13):
         super(MHFA, self).__init__()
 
         # Define learnable weights for key and value computations across layers
-        self.weights_k = nn.Parameter(data=torch.ones(13), requires_grad=True)
-        self.weights_v = nn.Parameter(data=torch.ones(13), requires_grad=True)
+        self.weights_k = nn.Parameter(data=torch.ones(nb_layer), requires_grad=True)
+        self.weights_v = nn.Parameter(data=torch.ones(nb_layer), requires_grad=True)
 
         # Initialize given parameters
         self.head_nb = head_nb
@@ -302,12 +302,12 @@ class MHFA_ChannelAtt(nn.Module):
         return out
 
 class MHFA_Group_Conv2D(nn.Module):
-    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256,group_nb=2):
+    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256,group_nb=2,nb_layer=13):
         super(MHFA_Group_Conv2D, self).__init__()
         # Multi Q + Single K + Single V
         # Define learnable weights for key and value computations across layers
-        self.weights_k = nn.Parameter(data=torch.ones(13), requires_grad=True)
-        self.weights_v = nn.Parameter(data=torch.ones(13), requires_grad=True)
+        self.weights_k = nn.Parameter(data=torch.ones(nb_layer), requires_grad=True)
+        self.weights_v = nn.Parameter(data=torch.ones(nb_layer), requires_grad=True)
 
         # Initialize given parameters
         self.head_nb = head_nb

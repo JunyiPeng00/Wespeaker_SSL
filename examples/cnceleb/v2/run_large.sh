@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM2
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM
 #SBATCH -p gpu-a6000-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
@@ -24,29 +24,30 @@ stop_stage=6
 data=data
 data_type="shard"  # shard/raw
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Fixed
+# config=conf/wavlm_base_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_FT.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-FT
+# config=conf/wavlm_base_MHFA_LR3.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch20
+# exp_dir=exp/TMP/TMP_${port}
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Fix
+# config=conf/wavlm_base_CA_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-CA-MHFA-Epoch30-CNNFixed
 
-config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter.yaml
-exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter
+config=conf/wavlm_large_CA_MHFA_LR3_CNNFixed_Frozen_FT.yaml
+exp_dir=exp/Large/WavLM_Large-CA-MHFA-Epoch30-Frozen-FT
 
 
 gpus="[0,1,2,3]"
-num_avg=2
-checkpoint=
+num_avg=3
+checkpoint=${exp_dir}/models/model_0.pt
 
 trials="CNC-Eval-Concat.lst CNC-Eval-Avg.lst"
 score_norm_method="asnorm"  # asnorm/snorm
-top_n=300
+top_n=200
 
 # setup for large margin fine-tuning
-lm_config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter-lm.yaml
+lm_config=conf/resnet_lm.yaml
 
 . tools/parse_options.sh || exit 1
 
@@ -89,7 +90,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
       --train_label ${data}/cnceleb_train/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
-      --PORT ${port} \
+      --master_port ${port} \
       ${checkpoint:+--checkpoint $checkpoint}
 fi
 

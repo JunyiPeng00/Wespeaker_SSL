@@ -37,7 +37,7 @@ def main(input1=None, input2=None, output=None):
         value1 = float(parts1[2])
         value2 = float(parts2[2])
         
-        average = (value1 + value2) / 2
+        average = 0.9*value1+0.1*value2
         
         new_line = ' '.join(parts1[:2] + [f"{average:.5f}"] + parts1[3:])
         new_lines.append(new_line)

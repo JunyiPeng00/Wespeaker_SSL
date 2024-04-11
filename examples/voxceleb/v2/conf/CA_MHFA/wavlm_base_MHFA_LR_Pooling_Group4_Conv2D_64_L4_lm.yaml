@@ -55,8 +55,8 @@ model_args:
   head_nb: 256
   embed_dim: 256
   group: 64 # Param = head_nb * comp_dim
-  cnn_scale: 0.01
-  layer_drop: 0.05 
+  cnn_scale: 1.0
+  layer_drop: 0.1 
 
 projection_args:
   project_type: "arc_margin_intertopk_subcenter" # add_margin, arc_margin, sphere, softmax
@@ -65,8 +65,8 @@ projection_args:
 
 margin_scheduler: MarginScheduler
 margin_update:
-  initial_margin: 0.5
-  final_margin: 0.5
+  initial_margin: 0.4
+  final_margin: 0.4
   increase_start_epoch: 1
   fix_start_epoch: 1
   update_margin: True
@@ -79,11 +79,11 @@ optimizer: SGD
 optimizer_args:
   momentum: 0.9
   nesterov: True
-  weight_decay: 1.0e-6
+  weight_decay: 1.0e-7
 
 scheduler: ExponentialDecrease
 scheduler_args:
   initial_lr: 5.0e-4 # 8.0e-3
-  final_lr: 5.0e-5 #4.4e-3 
+  final_lr: 5.0e-6 #4.4e-3 
   warm_up_epoch: 1
   warm_from_zero: True

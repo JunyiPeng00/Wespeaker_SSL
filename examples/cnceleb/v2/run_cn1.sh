@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM2
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM1
 #SBATCH -p gpu-a6000-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
@@ -24,22 +24,37 @@ stop_stage=6
 data=data
 data_type="shard"  # shard/raw
 
+# config=conf/wavlm_base_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed
+
 # config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Fixed
+# exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Fixed
 
 # config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_FT.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-FT
+# exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-FT
 
 # config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Fix
+# exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Fix
 
-config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter.yaml
-exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter
+# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter.yaml
+# exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter
+
+# config=conf/wavlm_large_CA_MHFA_LR3_CNNFixed_Frozen.yaml
+# exp_dir=exp/Large/CN1/WavLM_Large-CA-MHFA-Epoch30-Frozen
+
+config=conf/wavlm_large_CA_MHFA_LR3_CNNFixed_Frozen_FT.yaml
+exp_dir=exp/Large/CN1/WavLM_Large-CA-MHFA-Epoch30-Frozen-FT
+
+# config=conf/wavlm_base_MHFA_LR3.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch20
+# exp_dir=exp/TMP/TMP_${port}
+
+
 
 
 gpus="[0,1,2,3]"
 num_avg=2
-checkpoint=
+checkpoint=$exp_dir/models/model_0.pt
 
 trials="CNC-Eval-Concat.lst CNC-Eval-Avg.lst"
 score_norm_method="asnorm"  # asnorm/snorm
@@ -57,7 +72,7 @@ lm_config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter-lm.yaml
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   echo "Covert train and test data to ${data_type}..."
-  for dset in cnceleb_train eval; do
+  for dset in cnceleb_train_cn1; do
     if [ $data_type == "shard" ]; then
       python tools/make_shard_list.py --num_utts_per_shard 1000 \
           --num_threads 16 \
@@ -70,10 +85,10 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
           ${data}/$dset/utt2spk ${data}/$dset/raw.list
     fi
   done
-  # Convert all musan data to LMDB
-  python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
-  # Convert all rirs data to LMDB
-  python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
+  # # Convert all musan data to LMDB
+  # python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
+  # # Convert all rirs data to LMDB
+  # python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
@@ -85,8 +100,8 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
       --gpus $gpus \
       --num_avg ${num_avg} \
       --data_type "${data_type}" \
-      --train_data ${data}/cnceleb_train/${data_type}.list \
-      --train_label ${data}/cnceleb_train/utt2spk \
+      --train_data ${data}/cnceleb_train_cn1/${data_type}.list \
+      --train_label ${data}/cnceleb_train_cn1/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
       --PORT ${port} \
@@ -104,14 +119,14 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
   model_path=$avg_model
 
   echo "Extract embeddings ..."
-  local/extract_cnc.sh \
+  local/extract_cnc_cn1.sh \
     --exp_dir $exp_dir --model_path $model_path \
     --nj 4 --gpus $gpus --data_type $data_type --data ${data}
 fi
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Score ..."
-  local/score.sh \
+  local/score_cn1.sh \
     --stage 1 --stop-stage 2 \
     --exp_dir $exp_dir \
     --data ${data} \
@@ -120,10 +135,10 @@ fi
 
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
   echo "Score norm ..."
-  local/score_norm.sh \
+  local/score_norm_cn1.sh \
     --stage 1 --stop-stage 3 \
     --score_norm_method $score_norm_method \
-    --cohort_set cnceleb_train \
+    --cohort_set cnceleb_train_cn1 \
     --top_n $top_n \
     --exp_dir $exp_dir \
     --data ${data} \
@@ -152,7 +167,7 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
   mkdir -p ${lm_exp_dir}/models
   # Use the pre-trained average model to initialize the LM training
   cp ${exp_dir}/models/avg_model.pt ${lm_exp_dir}/models/model_0.pt
-  bash run.sh --stage 3 --stop_stage 7 \
+  bash run_cn1.sh --stage 3 --stop_stage 7 \
       --data ${data} \
       --data_type ${data_type} \
       --config ${lm_config} \

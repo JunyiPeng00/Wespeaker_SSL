@@ -4,11 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import LayerNorm
 
-from wespeaker.models.ssl.WavLM import *
 from einops import rearrange, repeat
 from torch.nn.utils import remove_weight_norm
+
 from wespeaker.models.ssl.modules import GradMultiply
 from wespeaker.models.ssl_backend import *
+from wespeaker.models.ssl.WavLM import *
 
 class WavLM_Base_MHFA(nn.Module):
     def __init__(self,model_path, pooling, head_nb, embed_dim, group,cnn_scale=0.0,layer_drop=0.05):
@@ -53,7 +54,7 @@ class WavLM_Base_MHFA(nn.Module):
         
         x = wav_and_flag
         # with torch.no_grad():
-        rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=13)
+        rep, layer_results = self.model.extract_features(x[:,:16000*20], output_layer=12)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
         
@@ -82,3 +83,16 @@ class WavLM_Base_MHFA(nn.Module):
                 continue;
 
             self_state[name].copy_(param);
+
+if __name__ == "__main__":
+    from thop import profile
+    # from ptflops import get_model_complexity_info
+    model_path = '/home/jpeng/ntt/work/Data/pretrained_model/WavLM-Large.pt'
+    pooling = 'MHFA'
+    embed_dim = 256
+    head_nb = 64
+    group = 1
+    model = WavLM_Base_MHFA(model_path, pooling, head_nb, embed_dim, group,cnn_scale=0.0,layer_drop=0.00)
+    flops, params = profile(model.eval(), inputs=(torch.randn(1, 16000*2),))
+
+    print("FLOPS: {} G, Params: {} M".format(flops / 1e9, params / 1e6))

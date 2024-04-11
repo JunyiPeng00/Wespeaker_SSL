@@ -4,7 +4,7 @@
 #   verification challenge system to further improve the performance.
 #   In this fine-tuning stage, large margin and longer segment will
 #   be used.
-
+PORT: 25182
 exp_dir: exp/ECAPA_TDNN_GLOB_c512-ASTP-emb192-fbank80-num_frms200-aug0.6-spTrue-saFalse-ArcMargin-SGD-epoch150-LM
 gpus: "[0,1]"
 num_avg: 1

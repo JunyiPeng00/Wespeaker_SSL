@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM2
-#SBATCH -p gpu-a6000-kishin
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM
+#SBATCH -p gpu-2080ti-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
 WORK_DIR=/home/jpeng/ntt/work/SPKID/examples/cnceleb/v2
@@ -18,27 +18,26 @@ max_port=40000
 current_time=$(date +%s)
 port=$((current_time % (max_port - base_port) + base_port))
 
-stage=3
+stage=4
 stop_stage=6
 
 data=data
 data_type="shard"  # shard/raw
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Fixed
+# config=conf/wavlm_base_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_FT.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-FT
+# config=conf/wavlm_base_MHFA_LR3.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch20
+# exp_dir=exp/TMP/TMP_${port}
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Fix
+config=conf/wavlm_base_CA_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-CA-MHFA-Epoch30-CNNFixed
 
-config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter.yaml
-exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter
-
-
+# exp_dir=exp/WavLM_BASE_PLUS-CA-MHFA-Epoch30-CNNFixed-LM
+exp_dir=exp/CN1/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter-LM
 gpus="[0,1,2,3]"
-num_avg=2
+num_avg=1
 checkpoint=
 
 trials="CNC-Eval-Concat.lst CNC-Eval-Avg.lst"
@@ -46,7 +45,7 @@ score_norm_method="asnorm"  # asnorm/snorm
 top_n=300
 
 # setup for large margin fine-tuning
-lm_config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter-lm.yaml
+lm_config=conf/wavlm_base_CA_MHFA_LR3_CNNFixed_lm.yaml
 
 . tools/parse_options.sh || exit 1
 
@@ -89,7 +88,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
       --train_label ${data}/cnceleb_train/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
-      --PORT ${port} \
+      --master_port ${port} \
       ${checkpoint:+--checkpoint $checkpoint}
 fi
 
@@ -104,14 +103,14 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
   model_path=$avg_model
 
   echo "Extract embeddings ..."
-  local/extract_cnc.sh \
+  local/extract_cnc_cn1.sh \
     --exp_dir $exp_dir --model_path $model_path \
     --nj 4 --gpus $gpus --data_type $data_type --data ${data}
 fi
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Score ..."
-  local/score.sh \
+  local/score_cn1.sh \
     --stage 1 --stop-stage 2 \
     --exp_dir $exp_dir \
     --data ${data} \
@@ -120,7 +119,7 @@ fi
 
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
   echo "Score norm ..."
-  local/score_norm.sh \
+  local/score_norm_cn1.sh \
     --stage 1 --stop-stage 3 \
     --score_norm_method $score_norm_method \
     --cohort_set cnceleb_train \
@@ -128,39 +127,4 @@ if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
     --exp_dir $exp_dir \
     --data ${data} \
     --trials "$trials"
-fi
-
-if [ ${stage} -le 7 ] && [ ${stop_stage} -ge 7 ]; then
-  echo "Export the best model ..."
-  python wespeaker/bin/export_jit.py \
-    --config $exp_dir/config.yaml \
-    --checkpoint $exp_dir/models/avg_model.pt \
-    --output_file $exp_dir/models/final.zip
-fi
-
-# ================== Large margin fine-tuning ==================
-# for reference: https://arxiv.org/abs/2206.11699
-# It shoule be noted that the large margin fine-tuning
-# is optional. It often be used in speaker verification
-# challenge to further improve performance. This training
-# proces will take longer segment as input and will take
-# up more gpu memory.
-
-if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
-  echo "Large margin fine-tuning ..."
-  lm_exp_dir=${exp_dir}-LM
-  mkdir -p ${lm_exp_dir}/models
-  # Use the pre-trained average model to initialize the LM training
-  cp ${exp_dir}/models/avg_model.pt ${lm_exp_dir}/models/model_0.pt
-  bash run.sh --stage 3 --stop_stage 7 \
-      --data ${data} \
-      --data_type ${data_type} \
-      --config ${lm_config} \
-      --exp_dir ${lm_exp_dir} \
-      --gpus $gpus \
-      --num_avg 1 \
-      --checkpoint ${lm_exp_dir}/models/model_0.pt \
-      --trials "$trials" \
-      --score_norm_method ${score_norm_method} \
-      --top_n ${top_n}
 fi

@@ -141,6 +141,7 @@ def train(config='conf/config.yaml', **kwargs):
     projection = get_projection(configs['projection_args'])
     # model.add_module("projection", projection)
     model = SpeakerNet(model,projection)
+    
     if rank == 0:
         # print model
         for line in pformat(model).split('\n'):

@@ -14,8 +14,8 @@ cd $WORK_DIR
 . ./path.sh || exit 1
 
 
-stage=4
-stop_stage=4 #6
+stage=3
+stop_stage=3 #6
 
 data=data
 data_type="raw"  # shard/raw
@@ -38,8 +38,10 @@ config=conf/CA_MHFA/wavlm_base_MHFA_LR_Pooling_Group4_Conv2D_32_L4.yaml
 # exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch30
 # exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch20-CNN_Learnable
 # exp_dir=exp/V2/WavLM-BasePlus-FullFineTuning-MHFA-emb256-3s-LRS10-Epoch20-CNN_Learnable-speed
-# exp_dir=exp/LargeModel/WavLM-Large-FullFineTuning-MHFA-Head32-emb256-3s-LRS10-Epoch20
-exp_dir=exp/CA-MHFA/WavLM-BasePlus-FullFineTuning-G-MHFA_Conv2D-emb256-3s-LRS10-Epoch40-Head64-L4-LM
+exp_dir=exp/LargeModel/WavLM-Large-FullFineTuning-MHFA-Head32-emb256-3s-LRS10-Epoch20-2
+# exp_dir=exp/LargeModel/WavLM-Large-FullFineTuning-CA-MHFA-Head32-emb256-3s-LRS10-Epoch20-LM3-LM
+# exp_dir=exp/LargeModel/WavLM-Large-FullFineTuning-MHFA-Head32-emb256-3s-LRS10-Epoch15-Finetuning
+# exp_dir=exp/CA-MHFA/WavLM-BasePlus-FullFineTuning-G-MHFA_Conv2D-emb256-3s-LRS10-Epoch40-Head64-L4-LM
 # gpus="[0,1,2,3]"
 gpus="[0,1,2,3]"
 
@@ -80,8 +82,8 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-  echo "******This script is used to fast evaluate model performance in Vox1-O*****"
-  for i in $(seq 4 -1 1); do
+  echo "******This script is used to fast evaluate model performance on Vox1-O*****"
+  for i in $(seq 1 -1 0); do
     model_path=$exp_dir/models/model_$i.pt
 
     echo $model_path
@@ -100,12 +102,12 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 fi
 
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
-  for i in $(seq 5 -1 5); do
+  for i in $(seq 2 -1 1); do
     model_path=$exp_dir/models/model_$i.pt
 
     echo $model_path
     echo "Extract embeddings ..."
-    local/extract_vox_short.sh \
+    local/extract_vox_tmp_short.sh \
       --exp_dir $exp_dir --model_path $model_path \
       --nj 4 --gpus $gpus --data_type $data_type --data $data
 

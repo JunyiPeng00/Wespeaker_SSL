@@ -26,15 +26,15 @@ data=data
 . tools/parse_options.sh
 set -e
 
-data_name_array=("cnceleb_train" "eval")
-data_list_path_array=("${data}/cnceleb_train/${data_type}.list" "${data}/eval/${data_type}.list")
-data_scp_path_array=("${data}/cnceleb_train/wav.scp" "${data}/eval/wav.scp")
+data_name_array=("cnceleb_train_cn1" "eval")
+data_list_path_array=("${data}/cnceleb_train_cn1/${data_type}.list" "${data}/eval/${data_type}.list")
+data_scp_path_array=("${data}/cnceleb_train_cn1/wav.scp" "${data}/eval/wav.scp")
 nj_array=($nj $nj)
 batch_size_array=(16 1) # batch_size of test set must be 1 !!!
 num_workers_array=(4 1)
 count=${#data_name_array[@]}
 
-for i in $(seq 1 $(($count - 1))); do
+for i in $(seq 0 $(($count - 1))); do
   wavs_num=$(wc -l ${data_scp_path_array[$i]} | awk '{print $1}')
   bash tools/extract_embedding.sh --exp_dir ${exp_dir} \
     --model_path $model_path \

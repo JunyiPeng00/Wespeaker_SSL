@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM2
-#SBATCH -p gpu-a6000-kishin
+#SBATCH -J Improved_SSL_SPK-Encoder-Baseline-CM1
+#SBATCH -p gpu-2080ti-kishin
 #SBATCH --gres=gpu:4
 #SBATCH -c 4
 WORK_DIR=/home/jpeng/ntt/work/SPKID/examples/cnceleb/v2
@@ -24,21 +24,19 @@ stop_stage=6
 data=data
 data_type="shard"  # shard/raw
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Fixed
+# config=conf/wavlm_base_MHFA_LR3_CNNFixed.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_FT.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-FT
+# config=conf/wavlm_base_MHFA_LR3.yaml
+# exp_dir=exp/WavLM_BASE_PLUS-MHFA-Epoch20
+# exp_dir=exp/TMP/TMP_${port}
 
-# config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Fix.yaml
-# exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Fix
-
-config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter.yaml
-exp_dir=exp/CN2/WavLM_BASE_PLUS-MHFA-Epoch30-CNNFixed-Vox2-Adapter
+config=conf/SV/resnet.yaml
+exp_dir=exp/resnet/resnet221
 
 
 gpus="[0,1,2,3]"
-num_avg=2
+num_avg=3
 checkpoint=
 
 trials="CNC-Eval-Concat.lst CNC-Eval-Avg.lst"
@@ -46,7 +44,7 @@ score_norm_method="asnorm"  # asnorm/snorm
 top_n=300
 
 # setup for large margin fine-tuning
-lm_config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter-lm.yaml
+lm_config=conf/resnet_lm.yaml
 
 . tools/parse_options.sh || exit 1
 
@@ -57,7 +55,7 @@ lm_config=conf/cn1/wavlm_base_MHFA_LR3_CNNFixed_fromVox_Adapter-lm.yaml
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   echo "Covert train and test data to ${data_type}..."
-  for dset in cnceleb_train eval; do
+  for dset in cnceleb_train_cn1; do
     if [ $data_type == "shard" ]; then
       python tools/make_shard_list.py --num_utts_per_shard 1000 \
           --num_threads 16 \
@@ -70,23 +68,23 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
           ${data}/$dset/utt2spk ${data}/$dset/raw.list
     fi
   done
-  # Convert all musan data to LMDB
-  python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
-  # Convert all rirs data to LMDB
-  python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
+  # # Convert all musan data to LMDB
+  # python tools/make_lmdb.py ${data}/musan/wav.scp ${data}/musan/lmdb
+  # # Convert all rirs data to LMDB
+  # python tools/make_lmdb.py ${data}/rirs/wav.scp ${data}/rirs/lmdb
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Start training ..."
   num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
   torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
-    wespeaker/bin/train_V2.py --config $config \
+    wespeaker/bin/train.py --config $config \
       --exp_dir ${exp_dir} \
       --gpus $gpus \
       --num_avg ${num_avg} \
       --data_type "${data_type}" \
-      --train_data ${data}/cnceleb_train/${data_type}.list \
-      --train_label ${data}/cnceleb_train/utt2spk \
+      --train_data ${data}/cnceleb_train_cn1/${data_type}.list \
+      --train_label ${data}/cnceleb_train_cn1/utt2spk \
       --reverb_data ${data}/rirs/lmdb \
       --noise_data ${data}/musan/lmdb \
       --PORT ${port} \

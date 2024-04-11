@@ -8,37 +8,9 @@ from wespeaker.models.ssl.WavLM_Large import *
 from einops import rearrange, repeat
 from torch.nn.utils import remove_weight_norm
 from wespeaker.models.ssl.modules import GradMultiply
+from wespeaker.models.ssl_backend import *
 
 
-class MHFA(nn.Module):
-    def __init__(self,head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
-        super(MHFA, self).__init__()
-        self.weights_k = nn.Parameter(data=torch.ones(25),requires_grad=True)
-        self.weights_v = nn.Parameter(data=torch.ones(25),requires_grad=True)
-        self.head_nb = head_nb
-        self.ins_dim = inputs_dim
-        self.cmp_dim = compression_dim
-        self.ous_dim = outputs_dim
-        self.cmp_linear_k = nn.Linear(self.ins_dim, self.cmp_dim)
-        self.cmp_linear_v = nn.Linear(self.ins_dim, self.cmp_dim)
-        self.att_head = nn.Linear(self.cmp_dim, self.head_nb)
-        self.pooling_fc = nn.Linear(self.head_nb*self.cmp_dim, self.ous_dim)
-
-    def forward(self,x):
-        # X shape is [Batch, Dim, Frame_len, Nb_Layer]
-        k = torch.sum(x.mul(nn.functional.softmax(self.weights_k,dim=-1)),dim=-1).transpose(1,2)
-        v = torch.sum(x.mul(nn.functional.softmax(self.weights_v,dim=-1)),dim=-1).transpose(1,2)
-
-        k = self.cmp_linear_k(k)
-        v = self.cmp_linear_v(v)
-
-        att_k = self.att_head(k)
-        v = v.unsqueeze(-2)
-        pooling_outs = torch.sum(v.mul(nn.functional.softmax(att_k,dim=1).unsqueeze(-1)),dim=1)
-        b,h,f = pooling_outs.shape
-        pooling_outs = pooling_outs.reshape(b,-1)
-        outs = self.pooling_fc(pooling_outs)
-        return outs
 
 class WavLM_Large_MHFA(nn.Module):
     def __init__(self,model_path, pooling, head_nb, embed_dim, group=1, cnn_scale=1.0,layer_drop=0.05,frozen=False):
@@ -51,8 +23,11 @@ class WavLM_Large_MHFA(nn.Module):
         self.model = WavLM(cfg)
         self.loadParameters(checkpoint['model'])
         self.frozen = frozen
-        self.back_end = MHFA(inputs_dim=1024, head_nb=head_nb,outputs_dim=embed_dim)
-        self.feature_grad_mult = 0.02
+        if pooling == 'MHFA':
+            self.back_end = MHFA(inputs_dim=1024, head_nb=head_nb,outputs_dim=embed_dim,nb_layer=25)
+        elif pooling == 'G_MHFA_Conv2D':
+            self.back_end = MHFA_Group_Conv2D(inputs_dim=1024, head_nb=head_nb, outputs_dim=embed_dim, group_nb=group, nb_layer=25)
+        self.feature_grad_mult = 0.03
 
     def forward(self,wav_and_flag):
         
@@ -89,3 +64,16 @@ class WavLM_Large_MHFA(nn.Module):
                 continue;
 
             self_state[name].copy_(param);
+
+if __name__ == "__main__":
+    from thop import profile
+    # from ptflops import get_model_complexity_info
+    model_path = '/home/jpeng/ntt/work/Data/pretrained_model/WavLM-Large.pt'
+    pooling = 'MHFA'
+    embed_dim = 256
+    head_nb = 64
+    group = 1
+    model = WavLM_Large_MHFA(model_path, pooling, head_nb, embed_dim, group,cnn_scale=0.0,layer_drop=0.00)
+    flops, params = profile(model.eval(), inputs=(torch.randn(1, 16000*2),))
+
+    print("FLOPS: {} G, Params: {} M".format(flops / 1e9, params / 1e6))
